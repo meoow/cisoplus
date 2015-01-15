@@ -1,7 +1,7 @@
 # CISO Plus
 ## Converting PSP ISO file to compressed CSO format
 
-The code is mainly based on two project:  
+The code is mainly based on two projects:  
 [phyber/ciso](https://github.com/phyber/ciso)  
 [barneygale/iso9660](https://github.com/barneygale/iso9660)  
 
