@@ -35,9 +35,9 @@ class ISO9660IOError(IOError):
 
 class ISO9660(object):
 
-        PMF_HEADER = 'PSMF'
-        AT3_HEADER = 'RIFF'
-        PNG_HEADER = '\x89PNG'
+        PMF_HEADER = b'PSMF'
+        AT3_HEADER = b'RIFF'
+        PNG_HEADER = b'\x89PNG'
 
 
         def __init__(self, url):
