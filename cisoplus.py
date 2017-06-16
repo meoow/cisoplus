@@ -1,20 +1,17 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
-from __future__ import print_function
+
 import os
 import struct
 import sys
 import zlib
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import pprint
 import array
 from itertools import chain
+from io import BytesIO
 import os.path
 
-try:
-	from cStringIO import StringIO
-except ImportError:
-	from StringIO import StringIO
 
 CISO_MAGIC = 0x4F534943 # CISO
 CISO_HEADER_SIZE = 0x18 # 24
@@ -156,6 +153,7 @@ class ISO9660(object):
 		with open(self._url, 'rb') as fh:
 			for f in self.tree():
 				s_l = self.get_file_pos(f)
+				length = 0
 				if s_l is not None:
 					start_sec,  length = s_l
 				if length < SECTOR_SIZE:
@@ -165,7 +163,7 @@ class ISO9660(object):
 					continue
 				start = start_sec * SECTOR_SIZE
 				fh.seek(start)
-				self._buff = StringIO(fh.read(length))
+				self._buff = BytesIO(fh.read(length))
 				if self._unpack_raw(header_size) in \
 						(self.PMF_HEADER, self.AT3_HEADER, self.PNG_HEADER):
 					self._media_file.append(f)
@@ -185,7 +183,7 @@ class ISO9660(object):
 		start = sector * SECTOR_SIZE
 		if self._buff:
 			self._buff.close()
-		opener = urllib.FancyURLopener()
+		opener = urllib.request.FancyURLopener()
 		opener.http_error_206 = lambda *a, **k: None
 		opener.addheader("Range", "bytes=%d-%d" % (start, start+length-1))
 		self._buff = opener.open(self._url)
@@ -193,7 +191,7 @@ class ISO9660(object):
 	def _get_sector_file(self, sector, length):
 		with open(self._url, 'rb') as f:
 			f.seek(sector*SECTOR_SIZE)
-			self._buff = StringIO(f.read(length))
+			self._buff = BytesIO(f.read(length))
 
 	##
 	## Return the record for final directory in a path
@@ -280,9 +278,9 @@ class ISO9660(object):
 		d['volume_sequence']      = self._unpack_both('h')
 
 		l2 = self._unpack('B')
-		d['name'] = self._unpack_string(l2).split(';')[0]
-		if d['name'] == '\x00':
-			d['name'] = ''
+		d['name'] = self._unpack_string(l2).split(b';')[0]
+		if d['name'] == b'\x00':
+			d['name'] = b''
 
 		if l2 % 2 == 0:
 			self._unpack('B')
@@ -339,7 +337,7 @@ class ISO9660(object):
 		return a
 
 	def _unpack_string(self, l):
-		return self._buff.read(l).rstrip(' ')
+		return self._buff.read(l).rstrip(b' ')
 
 	def _unpack(self, st):
 		if st[0] not in ('<','>'):
@@ -413,7 +411,7 @@ def decompress_cso(infile, outfile):
 			# Print some info before we start
 			print("Decompressing '{}' to '{}'".format(
 				infile, outfile))
-			for k, v in ciso.items():
+			for k, v in list(ciso.items()):
 				print("{}: {}".format(k, v))
 
 			# Get the block index
@@ -504,7 +502,7 @@ def compress_iso(infile, outfile, compression_level, nocom_ranges=[], vaccum_ran
 				infile, outfile))
 
 			ciso = check_file_size(fin)
-			for k, v in ciso.items():
+			for k, v in list(ciso.items()):
 				print("{}: {}".format(k, v))
 			print("compress level: {}".format(compression_level))
 
@@ -527,12 +525,12 @@ def compress_iso(infile, outfile, compression_level, nocom_ranges=[], vaccum_ran
 
 			nocom_array = array.array('B')
 			nocom_array.fromstring(struct.pack('{0}x'.format(ciso['total_blocks'])))
-			for i in chain(*(xrange(a, b) for a,b in nocom_ranges)):
+			for i in chain(*(range(a, b) for a,b in nocom_ranges)):
 				try:
 					nocom_array[i] = 1
 				except IndexError:
 					pass
-			for i in chain(*(xrange(a, b) for a,b in vaccum_ranges)):
+			for i in chain(*(range(a, b) for a,b in vaccum_ranges)):
 				try:
 					nocom_array[i] = 2
 				except IndexError:
