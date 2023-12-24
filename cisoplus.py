@@ -594,7 +594,7 @@ def compress_iso(infile, outfile, compression_level, nocom_ranges=[], vaccum_ran
 
 			# end for block
 			# last position (total size)
-			block_index[block] = write_pos >> ciso['align']
+			block_index[block+1] = write_pos >> ciso['align']
 
 			# write header and index block
 			print("Writing block index")
